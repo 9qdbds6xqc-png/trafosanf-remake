@@ -45,7 +45,7 @@ export const Header = () => {
             <div className="flex items-center space-x-4">
               {/* Logo */}
               <div className="text-white font-bold text-2xl tracking-tight">
-                KI Vergabe
+                Sprich mit unserem Produkt
               </div>
             </div>
           </div>

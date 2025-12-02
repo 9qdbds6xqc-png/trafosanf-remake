@@ -13,11 +13,10 @@ const Questions = () => {
             <MessageCircle className="h-8 w-8 text-primary" />
           </div>
           <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            KI Vergabe
+            Sprich mit unserem Produkt
           </h1>
           <p className="text-muted-foreground text-center max-w-2xl">
-            Intelligente Lösungen für Beschaffung. Stellen Sie Fragen zu unseren Produkten und Dienstleistungen. 
-            Laden Sie PDF-Dokumente hoch, um präzise Antworten basierend auf Ihren Unterlagen zu erhalten.
+            Stelle technische oder allgemeine Fragen, um mehr über unser Produkt herauszufinden. Wenn sie mehr wissen wo
           </p>
         </div>
 
