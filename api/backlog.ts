@@ -12,7 +12,7 @@ const SUPABASE_TABLE = process.env.SUPABASE_TABLE || 'backlog_entries';
 const getAllowedOrigin = (origin: string | undefined): string => {
   if (!origin) return '*';
   
-  // Allow ki-vergabe.de and its subdomains
+  // Allow ki-vergabe.de and its subdomains (including www)
   if (origin.includes('ki-vergabe.de')) {
     return origin;
   }
@@ -27,30 +27,38 @@ const getAllowedOrigin = (origin: string | undefined): string => {
     return origin;
   }
   
+  // Default: allow all origins (for development)
   return '*';
 };
 
 // Handle CORS preflight
 const handleCORS = (req: VercelRequest, res: VercelResponse) => {
-  const origin = req.headers.origin;
+  const origin = req.headers.origin || req.headers.referer;
   const allowedOrigin = getAllowedOrigin(origin);
   
+  // Always set CORS headers
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  // Log for debugging
+  console.log('CORS request from origin:', origin, '-> allowed:', allowedOrigin);
 };
 
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ) {
-  handleCORS(req, res);
-
+  // Handle CORS preflight OPTIONS request FIRST
   if (req.method === 'OPTIONS') {
+    handleCORS(req, res);
     return res.status(200).end();
   }
+
+  // Set CORS headers for all other requests
+  handleCORS(req, res);
 
   try {
     // If Supabase is configured, use it
