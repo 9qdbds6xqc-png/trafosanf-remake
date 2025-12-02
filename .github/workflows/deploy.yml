@@ -34,6 +34,7 @@ jobs:
         run: npm run build
         env:
           VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
+          VITE_BACKLOG_API_URL: ${{ secrets.VITE_BACKLOG_API_URL }}
         
       - name: Setup Pages
         uses: actions/configure-pages@v4

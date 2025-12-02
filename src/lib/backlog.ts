@@ -78,8 +78,10 @@ const saveToLocalStorage = (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => {
 
 // Save to remote database via API
 const saveToDatabase = async (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => {
-  if (!API_URL) {
+  if (!API_URL || API_URL.trim() === '') {
     console.warn('Backlog API URL not configured. Entries will only be stored locally.');
+    console.warn('API_URL value:', API_URL);
+    console.warn('VITE_BACKLOG_API_URL from env:', import.meta.env.VITE_BACKLOG_API_URL);
     return;
   }
 
