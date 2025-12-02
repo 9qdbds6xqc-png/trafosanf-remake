@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PasswordProtection } from "@/components/PasswordProtection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { isAuthenticated } from "@/lib/auth";
 import {
   getBacklogEntries,
   clearBacklog,
@@ -26,8 +28,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Backlog = () => {
+  const [authenticated, setAuthenticated] = useState(false);
   const [entries, setEntries] = useState<BacklogEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      setAuthenticated(true);
+    }
+  }, []);
   const [filterPDF, setFilterPDF] = useState<string>("all");
 
   useEffect(() => {

@@ -4,10 +4,8 @@ import { Link } from "react-router-dom";
 
 const mainNav: Array<{ name: string; href: string; active?: boolean }> = [];
 
-const subNav = [
-  { name: "Upload", href: "/upload" },
-  { name: "Backlog", href: "/backlog" },
-];
+const subNav: Array<{ name: string; href: string }> = [];
+// Upload and Backlog are password-protected, so we hide them from navigation
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

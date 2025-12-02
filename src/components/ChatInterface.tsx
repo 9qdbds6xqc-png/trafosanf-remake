@@ -231,7 +231,12 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/upload')}
+                onClick={() => {
+                  // Check authentication before navigating
+                  if (window.confirm('Bitte Passwort eingeben, um Dokumente zu ändern.')) {
+                    navigate('/upload');
+                  }
+                }}
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Dokumente ändern
@@ -249,7 +254,11 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => navigate('/upload')}
+                onClick={() => {
+                  if (window.confirm('Bitte Passwort eingeben, um PDFs hochzuladen.')) {
+                    navigate('/upload');
+                  }
+                }}
               >
                 <Upload className="h-4 w-4 mr-2" />
                 PDFs hochladen

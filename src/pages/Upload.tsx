@@ -1,15 +1,24 @@
 import { PDFUpload } from "@/components/PDFUpload";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PasswordProtection } from "@/components/PasswordProtection";
 import { Upload, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { savePDFs, getPDFs } from "@/lib/pdfStorage";
+import { isAuthenticated } from "@/lib/auth";
 
 const UploadPage = () => {
   const navigate = useNavigate();
   const [hasPDFs, setHasPDFs] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      setAuthenticated(true);
+    }
+  }, []);
 
   useEffect(() => {
     const pdfs = getPDFs();
@@ -28,6 +37,10 @@ const UploadPage = () => {
 
   const pdfs = getPDFs();
   const currentPDFNames = pdfs?.fileNames || [];
+
+  if (!authenticated) {
+    return <PasswordProtection onSuccess={() => setAuthenticated(true)} pageName="Upload" />;
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
