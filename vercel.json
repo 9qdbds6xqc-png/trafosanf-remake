@@ -1,12 +1,4 @@
 {
-  "functions": {
-    "api/auth.ts": {
-      "runtime": "@vercel/node"
-    },
-    "api/backlog.ts": {
-      "runtime": "@vercel/node"
-    }
-  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -21,7 +13,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type"
+          "value": "Content-Type, Authorization"
         }
       ]
     }
