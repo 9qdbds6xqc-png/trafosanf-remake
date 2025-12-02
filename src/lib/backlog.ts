@@ -17,11 +17,30 @@ const BACKLOG_KEY = 'chat_backlog';
 const MAX_BACKLOG_ENTRIES = 1000;
 const API_URL = import.meta.env.VITE_BACKLOG_API_URL || '';
 
+// Generate a UUID with fallback for browsers that don't support crypto.randomUUID
+function generateUUID(): string {
+  // Try to use crypto.randomUUID() if available
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    try {
+      return crypto.randomUUID();
+    } catch (e) {
+      // Fall through to fallback
+    }
+  }
+  
+  // Fallback: Generate a UUID v4 manually
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 // Generate a unique session ID
 export const generateSessionId = (): string => {
   let sessionId = localStorage.getItem('chat_session_id');
   if (!sessionId) {
-    sessionId = crypto.randomUUID();
+    sessionId = generateUUID();
     localStorage.setItem('chat_session_id', sessionId);
   }
   return sessionId;
@@ -44,7 +63,7 @@ export const getCompanyId = (): string | undefined => {
 const saveToLocalStorage = (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => {
   const backlog = getBacklog();
   const newEntry: BacklogEntry = {
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     timestamp: Date.now(),
     ...entry,
   };
