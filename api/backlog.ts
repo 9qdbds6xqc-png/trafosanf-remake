@@ -68,12 +68,22 @@ export default async function handler(
   }
 
   try {
+    // Log configuration status
+    console.log('=== Configuration Check ===');
+    console.log('SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'NOT SET');
+    console.log('SUPABASE_KEY:', SUPABASE_KEY ? 'SET' : 'NOT SET');
+    console.log('SUPABASE_TABLE:', SUPABASE_TABLE);
+    console.log('Request method:', req.method);
+    console.log('=======================');
+
     // If Supabase is configured, use it
     if (SUPABASE_URL && SUPABASE_KEY) {
-      return handleSupabase(req, res);
+      console.log('Using Supabase backend');
+      return await handleSupabase(req, res);
     }
 
     // Otherwise, use a simple JSON file approach (not recommended for production)
+    console.log('Using simple in-memory backend (Supabase not configured)');
     return handleSimple(req, res);
   } catch (error) {
     console.error('Backlog API error:', error);
@@ -90,33 +100,73 @@ async function handleSupabase(req: VercelRequest, res: VercelResponse) {
     // Create new entry
     const entry = req.body;
 
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify({
-        session_id: entry.sessionId,
-        company_id: entry.companyId || null,
-        timestamp: new Date(entry.timestamp || Date.now()).toISOString(),
-        pdf_file_name: entry.pdfFileName || null,
-        question: entry.question,
-        answer: entry.answer,
-        is_pricing_question: entry.isPricingQuestion || false,
-        error: entry.error || null,
-      }),
-    });
+    console.log('=== Supabase POST Request ===');
+    console.log('Supabase URL:', SUPABASE_URL);
+    console.log('Table:', SUPABASE_TABLE);
+    console.log('Request body type:', typeof req.body);
+    console.log('Request body:', req.body);
+    console.log('Entry data:', JSON.stringify(entry, null, 2));
 
-    if (!response.ok) {
-      const error = await response.text();
-      return res.status(response.status).json({ error: 'Failed to save entry', details: error });
+    // Validate required fields
+    if (!entry || !entry.sessionId || !entry.question || !entry.answer) {
+      console.error('Missing required fields:', {
+        hasEntry: !!entry,
+        hasSessionId: !!entry?.sessionId,
+        hasQuestion: !!entry?.question,
+        hasAnswer: !!entry?.answer
+      });
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['sessionId', 'question', 'answer']
+      });
     }
 
-    const data = await response.json();
-    return res.status(201).json({ success: true, entry: data[0] });
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_KEY!}`,
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify({
+          session_id: entry.sessionId,
+          company_id: entry.companyId || null,
+          timestamp: new Date(entry.timestamp || Date.now()).toISOString(),
+          pdf_file_name: entry.pdfFileName || null,
+          question: entry.question,
+          answer: entry.answer,
+          is_pricing_question: entry.isPricingQuestion || false,
+          error: entry.error || null,
+        }),
+      });
+
+      console.log('Supabase response status:', response.status);
+      console.log('Supabase response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Supabase error:', errorText);
+        return res.status(response.status).json({ 
+          error: 'Failed to save entry', 
+          details: errorText,
+          supabaseUrl: SUPABASE_URL,
+          table: SUPABASE_TABLE
+        });
+      }
+
+      const data = await response.json();
+      console.log('Supabase success, saved entry:', data);
+      return res.status(201).json({ success: true, entry: data[0] });
+    } catch (fetchError) {
+      console.error('Fetch error:', fetchError);
+      return res.status(500).json({ 
+        error: 'Failed to save entry', 
+        details: fetchError instanceof Error ? fetchError.message : 'Unknown error',
+        type: 'fetch_error'
+      });
+    }
   }
 
   if (req.method === 'GET') {
