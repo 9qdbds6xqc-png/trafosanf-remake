@@ -11,7 +11,14 @@ export default async function handler(
   res: VercelResponse,
 ) {
   // Enable CORS - Allow requests from ki-vergabe.de
-  const origin = req.headers.origin;
+  // Headers can be string | string[] | undefined, so we need to handle arrays
+  const getHeaderValue = (header: string | string[] | undefined): string | undefined => {
+    if (!header) return undefined;
+    if (Array.isArray(header)) return header[0];
+    return header;
+  };
+
+  const origin = getHeaderValue(req.headers.origin);
   const allowedOrigin = origin && (origin.includes('ki-vergabe.de') || origin.includes('localhost') || origin.includes('github.io'))
     ? origin
     : '*';

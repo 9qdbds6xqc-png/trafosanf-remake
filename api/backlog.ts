@@ -39,9 +39,16 @@ export default async function handler(
   res: VercelResponse,
 ) {
   // Get origin from request (check multiple headers)
-  const origin = req.headers.origin || 
-                 req.headers.referer?.replace(/\/[^/]*$/, '') || 
-                 req.headers['x-forwarded-host'] ||
+  // Headers can be string | string[] | undefined, so we need to handle arrays
+  const getHeaderValue = (header: string | string[] | undefined): string | undefined => {
+    if (!header) return undefined;
+    if (Array.isArray(header)) return header[0];
+    return header;
+  };
+
+  const origin = getHeaderValue(req.headers.origin) || 
+                 getHeaderValue(req.headers.referer)?.replace(/\/[^/]*$/, '') || 
+                 getHeaderValue(req.headers['x-forwarded-host']) ||
                  undefined;
   
   const allowedOrigin = getAllowedOrigin(origin);
