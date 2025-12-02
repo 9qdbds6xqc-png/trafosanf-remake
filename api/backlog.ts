@@ -51,22 +51,21 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ) {
-  // Handle CORS preflight OPTIONS request FIRST - MUST return headers
+  // Get origin from request
+  const origin = req.headers.origin || req.headers.referer;
+  const allowedOrigin = getAllowedOrigin(origin);
+  
+  // ALWAYS set CORS headers first, before any other logic
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  
+  // Handle CORS preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    const origin = req.headers.origin || req.headers.referer;
-    const allowedOrigin = getAllowedOrigin(origin);
-    
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    
     return res.status(200).end();
   }
-
-  // Set CORS headers for all other requests
-  handleCORS(req, res);
 
   try {
     // If Supabase is configured, use it
