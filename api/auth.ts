@@ -2,7 +2,7 @@
 // This runs server-side, so the password is not exposed in client code
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createAdminTokenFromPassword } from './utils/admin-token';
+import { createAdminTokenFromPassword } from './utils/admin-token.js';
 
 // Password stored in environment variable (not in code)
 const CORRECT_PASSWORD = process.env.ADMIN_PASSWORD || 'Meryem';
