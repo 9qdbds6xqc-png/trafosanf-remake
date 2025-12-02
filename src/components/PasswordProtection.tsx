@@ -16,23 +16,26 @@ export const PasswordProtection = ({ onSuccess, pageName }: PasswordProtectionPr
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Small delay to prevent brute force
-    setTimeout(() => {
-      const success = login(password);
-      setIsLoading(false);
-
+    try {
+      const success = await login(password);
+      
       if (success) {
         onSuccess();
       } else {
         setError("Falsches Passwort. Bitte versuchen Sie es erneut.");
         setPassword("");
       }
-    }, 300);
+    } catch (error) {
+      setError("Fehler bei der Authentifizierung. Bitte versuchen Sie es erneut.");
+      setPassword("");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFirstTime = false; // Password is fixed, no first-time setup

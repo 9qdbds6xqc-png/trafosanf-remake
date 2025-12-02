@@ -207,7 +207,7 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
 
   return (
     <>
-      <div className="flex flex-col h-full max-h-[600px] border border-border rounded-lg bg-background">
+      <div className="flex flex-col h-full max-h-[700px] border border-border/50 rounded-xl bg-card/50 backdrop-blur-sm shadow-lg shadow-black/5">
         {/* PDF Status Section */}
         {pdfFileNames.length > 0 && (
           <div className="border-b border-border p-4 bg-muted/30">

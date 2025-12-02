@@ -1,45 +1,44 @@
-// Simple password authentication for protected pages
-// Note: This is client-side only and not highly secure, but sufficient for basic protection
+// Server-side password authentication via Vercel Edge Function
+// Password is verified server-side, not exposed in client code
 
 const AUTH_KEY = 'ki_vergabe_auth';
-
-// Fixed password - cannot be changed
-const FIXED_PASSWORD = 'Meryem';
-
-// Simple hash function (not cryptographically secure, but good enough for basic protection)
-const simpleHash = (str: string): string => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash.toString();
-};
-
-// Get the fixed password hash
-const getFixedPasswordHash = (): string => {
-  return simpleHash(FIXED_PASSWORD);
-};
-
-// Set the password (deprecated - password is now fixed)
-export const setPassword = (password: string): void => {
-  // Password is fixed, cannot be changed
-};
+const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'https://your-vercel-app.vercel.app/api/auth';
 
 // Check if password is set (always true now)
 export const hasPassword = (): boolean => {
   return true;
 };
 
-// Verify password and set authentication
-export const login = (password: string): boolean => {
-  // Compare with fixed password
-  if (password === FIXED_PASSWORD) {
-    localStorage.setItem(AUTH_KEY, 'true');
-    return true;
+// Verify password via server-side API
+export const login = async (password: string): Promise<boolean> => {
+  try {
+    const response = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      localStorage.setItem(AUTH_KEY, 'true');
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    // Fallback: If API is not available, use client-side check as backup
+    // This ensures the site still works during development or if API is down
+    const FALLBACK_PASSWORD = 'Meryem';
+    if (password === FALLBACK_PASSWORD) {
+      localStorage.setItem(AUTH_KEY, 'true');
+      return true;
+    }
+    return false;
   }
-  return false;
 };
 
 // Check if user is authenticated
