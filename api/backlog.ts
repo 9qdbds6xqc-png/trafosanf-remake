@@ -34,22 +34,6 @@ const getAllowedOrigin = (origin: string | undefined): string => {
   return '*';
 };
 
-// Handle CORS preflight
-const handleCORS = (req: VercelRequest, res: VercelResponse) => {
-  const origin = req.headers.origin || req.headers.referer;
-  const allowedOrigin = getAllowedOrigin(origin);
-  
-  // Always set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-  
-  // Log for debugging
-  console.log('CORS request from origin:', origin, '-> allowed:', allowedOrigin);
-};
-
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
@@ -62,7 +46,7 @@ export default async function handler(
   
   const allowedOrigin = getAllowedOrigin(origin);
   
-  // ALWAYS set CORS headers first, before any other logic
+  // ALWAYS set CORS headers FIRST, before ANY other logic
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -70,13 +54,16 @@ export default async function handler(
   res.setHeader('Access-Control-Max-Age', '86400');
   
   // Log for debugging
+  console.log('=== CORS DEBUG ===');
   console.log('Request method:', req.method);
-  console.log('Origin:', origin);
+  console.log('Origin header:', req.headers.origin);
+  console.log('Referer header:', req.headers.referer);
   console.log('Allowed origin:', allowedOrigin);
+  console.log('==================');
   
-  // Handle CORS preflight OPTIONS request
+  // Handle CORS preflight OPTIONS request - MUST return early
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request');
+    console.log('Handling OPTIONS preflight request - returning 200');
     return res.status(200).end();
   }
 
