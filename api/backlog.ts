@@ -103,9 +103,24 @@ export default async function handler(
 
 // Handle with Supabase
 async function handleSupabase(req: VercelRequest, res: VercelResponse) {
+  console.log('=== handleSupabase called ===');
+  console.log('Request method:', req.method);
+  console.log('Request method type:', typeof req.method);
+  
   if (req.method === 'POST') {
     // Create new entry
-    const entry = req.body;
+    // Vercel automatically parses JSON body, but let's be safe
+    let entry = req.body;
+    
+    // If body is a string, try to parse it
+    if (typeof entry === 'string') {
+      try {
+        entry = JSON.parse(entry);
+      } catch (e) {
+        console.error('Failed to parse body as JSON:', e);
+        return res.status(400).json({ error: 'Invalid JSON body' });
+      }
+    }
 
     console.log('=== Supabase POST Request ===');
     console.log('Supabase URL:', SUPABASE_URL);
