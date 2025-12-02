@@ -2,7 +2,9 @@
 // Note: This is client-side only and not highly secure, but sufficient for basic protection
 
 const AUTH_KEY = 'ki_vergabe_auth';
-const PASSWORD_KEY = 'ki_vergabe_password_hash';
+
+// Fixed password - cannot be changed
+const FIXED_PASSWORD = 'Meryem';
 
 // Simple hash function (not cryptographically secure, but good enough for basic protection)
 const simpleHash = (str: string): string => {
@@ -15,29 +17,25 @@ const simpleHash = (str: string): string => {
   return hash.toString();
 };
 
-// Set the password (first time setup or change)
-export const setPassword = (password: string): void => {
-  const hash = simpleHash(password);
-  localStorage.setItem(PASSWORD_KEY, hash);
+// Get the fixed password hash
+const getFixedPasswordHash = (): string => {
+  return simpleHash(FIXED_PASSWORD);
 };
 
-// Check if password is set
+// Set the password (deprecated - password is now fixed)
+export const setPassword = (password: string): void => {
+  // Password is fixed, cannot be changed
+};
+
+// Check if password is set (always true now)
 export const hasPassword = (): boolean => {
-  return localStorage.getItem(PASSWORD_KEY) !== null;
+  return true;
 };
 
 // Verify password and set authentication
 export const login = (password: string): boolean => {
-  const storedHash = localStorage.getItem(PASSWORD_KEY);
-  if (!storedHash) {
-    // If no password is set, allow first-time access with any password and save it
-    setPassword(password);
-    localStorage.setItem(AUTH_KEY, 'true');
-    return true;
-  }
-  
-  const inputHash = simpleHash(password);
-  if (inputHash === storedHash) {
+  // Compare with fixed password
+  if (password === FIXED_PASSWORD) {
     localStorage.setItem(AUTH_KEY, 'true');
     return true;
   }

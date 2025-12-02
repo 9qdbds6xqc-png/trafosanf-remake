@@ -35,7 +35,7 @@ export const PasswordProtection = ({ onSuccess, pageName }: PasswordProtectionPr
     }, 300);
   };
 
-  const isFirstTime = !hasPassword();
+  const isFirstTime = false; // Password is fixed, no first-time setup
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -48,17 +48,14 @@ export const PasswordProtection = ({ onSuccess, pageName }: PasswordProtectionPr
             Geschützter Bereich
           </CardTitle>
           <CardDescription className="text-center">
-            {isFirstTime 
-              ? "Bitte legen Sie ein Passwort für diesen Bereich fest."
-              : `Bitte geben Sie das Passwort ein, um auf ${pageName} zuzugreifen.`
-            }
+            Bitte geben Sie das Passwort ein, um auf {pageName} zuzugreifen.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">
-                {isFirstTime ? "Passwort festlegen" : "Passwort"}
+                Passwort
               </Label>
               <Input
                 id="password"
@@ -84,14 +81,8 @@ export const PasswordProtection = ({ onSuccess, pageName }: PasswordProtectionPr
               className="w-full" 
               disabled={isLoading || !password.trim()}
             >
-              {isLoading ? "Prüfe..." : isFirstTime ? "Passwort festlegen" : "Anmelden"}
+              {isLoading ? "Prüfe..." : "Anmelden"}
             </Button>
-
-            {isFirstTime && (
-              <p className="text-xs text-muted-foreground text-center">
-                ⚠️ Dieses Passwort wird lokal gespeichert. Wenn Sie es vergessen, löschen Sie den Browser-Cache.
-              </p>
-            )}
           </form>
         </CardContent>
       </Card>
