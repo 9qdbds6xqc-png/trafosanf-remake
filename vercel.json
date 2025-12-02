@@ -25,6 +25,12 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/backlog",
+      "destination": "/api/backlog"
+    }
   ]
 }
 
