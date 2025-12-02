@@ -84,7 +84,8 @@ const saveToDatabase = async (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => 
   }
 
   try {
-    const response = await fetch(`${API_URL}/entries`, {
+    // API_URL already includes /api/backlog, so we POST directly to it
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,7 +97,10 @@ const saveToDatabase = async (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => 
     });
 
     if (!response.ok) {
-      console.error('Failed to save backlog entry to database:', response.statusText);
+      const errorText = await response.text();
+      console.error('Failed to save backlog entry to database:', response.status, errorText);
+    } else {
+      console.log('Successfully saved backlog entry to database');
     }
   } catch (error) {
     console.error('Error saving backlog entry to database:', error);
@@ -129,9 +133,14 @@ export const saveToBacklog = async (
   saveToLocalStorage(entry);
 
   // Try to save to database (async, don't block)
-  saveToDatabase(entry).catch(err => {
-    console.error('Failed to sync to database:', err);
-  });
+  if (API_URL) {
+    console.log('Saving to database via API:', API_URL);
+    saveToDatabase(entry).catch(err => {
+      console.error('Failed to sync to database:', err);
+    });
+  } else {
+    console.warn('API_URL not configured. Entry saved locally only.');
+  }
 };
 
 // Get backlog from local storage
@@ -147,14 +156,16 @@ export const getBacklogFromDatabase = async (companyId?: string): Promise<Backlo
   }
 
   try {
+    // API_URL already includes /api/backlog, so we GET directly from it
     const url = companyId 
-      ? `${API_URL}/entries?companyId=${companyId}`
-      : `${API_URL}/entries`;
+      ? `${API_URL}?companyId=${companyId}`
+      : API_URL;
     
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.error('Failed to fetch backlog from database:', response.statusText);
+      const errorText = await response.text();
+      console.error('Failed to fetch backlog from database:', response.status, errorText);
       return getBacklog(); // Fallback to local storage
     }
 
