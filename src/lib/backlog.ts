@@ -1,153 +1,170 @@
-/**
- * Backlog Storage System
- * Stores all chat messages, questions, and answers
- */
+// Backlog management with local storage and remote database sync
+import { savePDFs } from './pdfStorage';
 
 export interface BacklogEntry {
   id: string;
+  sessionId: string;
   timestamp: number;
   pdfFileName?: string;
   question: string;
   answer: string;
   isPricingQuestion: boolean;
-  sessionId: string;
+  error?: string;
+  companyId?: string; // Optional: To track different companies
 }
 
-const BACKLOG_KEY = 'trafosanf_chat_backlog';
-const SESSION_KEY = 'trafosanf_session_id';
+const BACKLOG_KEY = 'chat_backlog';
+const MAX_BACKLOG_ENTRIES = 1000;
+const API_URL = import.meta.env.VITE_BACKLOG_API_URL || '';
 
-/**
- * Get or create session ID
- */
-export function getSessionId(): string {
-  let sessionId = localStorage.getItem(SESSION_KEY);
+// Generate a unique session ID
+export const generateSessionId = (): string => {
+  let sessionId = localStorage.getItem('chat_session_id');
   if (!sessionId) {
-    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem(SESSION_KEY, sessionId);
+    sessionId = crypto.randomUUID();
+    localStorage.setItem('chat_session_id', sessionId);
   }
   return sessionId;
-}
+};
 
-/**
- * Get all backlog entries
- */
-export function getBacklogEntries(): BacklogEntry[] {
-  try {
-    const stored = localStorage.getItem(BACKLOG_KEY);
-    if (!stored) return [];
-    
-    const entries: BacklogEntry[] = JSON.parse(stored);
-    // Sort by timestamp, newest first
-    return entries.sort((a, b) => b.timestamp - a.timestamp);
-  } catch (error) {
-    console.error('Error reading backlog:', error);
-    return [];
+// Get company ID (can be set via URL parameter or localStorage)
+export const getCompanyId = (): string | undefined => {
+  // Check URL parameter first
+  const urlParams = new URLSearchParams(window.location.search);
+  const companyId = urlParams.get('company');
+  if (companyId) {
+    localStorage.setItem('company_id', companyId);
+    return companyId;
   }
-}
+  // Otherwise use stored value
+  return localStorage.getItem('company_id') || undefined;
+};
 
-/**
- * Add entry to backlog
- */
-export function addBacklogEntry(
+// Save to local storage
+const saveToLocalStorage = (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => {
+  const backlog = getBacklog();
+  const newEntry: BacklogEntry = {
+    id: crypto.randomUUID(),
+    timestamp: Date.now(),
+    ...entry,
+  };
+  backlog.unshift(newEntry);
+
+  if (backlog.length > MAX_BACKLOG_ENTRIES) {
+    backlog.splice(MAX_BACKLOG_ENTRIES);
+  }
+
+  localStorage.setItem(BACKLOG_KEY, JSON.stringify(backlog));
+};
+
+// Save to remote database via API
+const saveToDatabase = async (entry: Omit<BacklogEntry, 'id' | 'timestamp'>) => {
+  if (!API_URL) {
+    console.warn('Backlog API URL not configured. Entries will only be stored locally.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/entries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...entry,
+        timestamp: Date.now(),
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to save backlog entry to database:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Error saving backlog entry to database:', error);
+    // Don't throw - we still want to save locally even if remote save fails
+  }
+};
+
+// Save to backlog (both local and remote)
+export const saveToBacklog = async (
   question: string,
   answer: string,
   pdfFileName?: string,
-  isPricingQuestion: boolean = false
-): void {
+  isPricingQuestion: boolean = false,
+  error?: string
+) => {
+  const sessionId = generateSessionId();
+  const companyId = getCompanyId();
+
+  const entry = {
+    sessionId,
+    pdfFileName,
+    question,
+    answer,
+    isPricingQuestion,
+    error,
+    companyId,
+  };
+
+  // Save locally immediately
+  saveToLocalStorage(entry);
+
+  // Try to save to database (async, don't block)
+  saveToDatabase(entry).catch(err => {
+    console.error('Failed to sync to database:', err);
+  });
+};
+
+// Get backlog from local storage
+export const getBacklog = (): BacklogEntry[] => {
+  const stored = localStorage.getItem(BACKLOG_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
+
+// Get backlog from remote database (all entries or filtered by company)
+export const getBacklogFromDatabase = async (companyId?: string): Promise<BacklogEntry[]> => {
+  if (!API_URL) {
+    return getBacklog(); // Fallback to local storage
+  }
+
   try {
-    const entries = getBacklogEntries();
-    const sessionId = getSessionId();
+    const url = companyId 
+      ? `${API_URL}/entries?companyId=${companyId}`
+      : `${API_URL}/entries`;
     
-    const newEntry: BacklogEntry = {
-      id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      pdfFileName,
-      question,
-      answer,
-      isPricingQuestion,
-      sessionId,
-    };
+    const response = await fetch(url);
     
-    entries.unshift(newEntry); // Add to beginning
-    
-    // Keep only last 1000 entries to prevent storage issues
-    const maxEntries = 1000;
-    const trimmedEntries = entries.slice(0, maxEntries);
-    
-    localStorage.setItem(BACKLOG_KEY, JSON.stringify(trimmedEntries));
-  } catch (error) {
-    console.error('Error saving to backlog:', error);
-    // Storage might be full, try to clear old entries
-    try {
-      const entries = getBacklogEntries();
-      const recentEntries = entries.slice(0, 500); // Keep only 500 most recent
-      localStorage.setItem(BACKLOG_KEY, JSON.stringify(recentEntries));
-      // Retry adding the entry
-      const sessionId = getSessionId();
-      const newEntry: BacklogEntry = {
-        id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: Date.now(),
-        pdfFileName,
-        question,
-        answer,
-        isPricingQuestion,
-        sessionId,
-      };
-      recentEntries.unshift(newEntry);
-      localStorage.setItem(BACKLOG_KEY, JSON.stringify(recentEntries.slice(0, 500)));
-    } catch (retryError) {
-      console.error('Failed to save to backlog after cleanup:', retryError);
+    if (!response.ok) {
+      console.error('Failed to fetch backlog from database:', response.statusText);
+      return getBacklog(); // Fallback to local storage
     }
-  }
-}
 
-/**
- * Clear all backlog entries
- */
-export function clearBacklog(): void {
-  try {
-    localStorage.removeItem(BACKLOG_KEY);
+    const data = await response.json();
+    return data.entries || [];
   } catch (error) {
-    console.error('Error clearing backlog:', error);
+    console.error('Error fetching backlog from database:', error);
+    return getBacklog(); // Fallback to local storage
   }
-}
+};
 
-/**
- * Export backlog as JSON
- */
-export function exportBacklog(): string {
-  const entries = getBacklogEntries();
-  return JSON.stringify(entries, null, 2);
-}
+// Clear backlog
+export const clearBacklog = () => {
+  localStorage.removeItem(BACKLOG_KEY);
+};
 
-/**
- * Get entries filtered by session
- */
-export function getEntriesBySession(sessionId: string): BacklogEntry[] {
-  const entries = getBacklogEntries();
-  return entries.filter(entry => entry.sessionId === sessionId);
-}
+// Export backlog as JSON
+export const exportBacklog = (entries?: BacklogEntry[]): string => {
+  const backlog = entries || getBacklog();
+  return JSON.stringify(backlog, null, 2);
+};
 
-/**
- * Get entries filtered by PDF
- */
-export function getEntriesByPDF(pdfFileName: string): BacklogEntry[] {
-  const entries = getBacklogEntries();
-  return entries.filter(entry => entry.pdfFileName === pdfFileName);
-}
-
-/**
- * Format timestamp to readable date
- */
-export function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleString('de-DE', {
+// Format timestamp for display
+export const formatTimestamp = (timestamp: number): string => {
+  return new Date(timestamp).toLocaleString('de-DE', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
   });
-}
-
+};

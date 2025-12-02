@@ -6,7 +6,7 @@ import { Send, Loader2, Upload } from "lucide-react";
 import { askQuestion, preparePDFContext } from "@/lib/openai";
 import { findRelevantSections } from "@/lib/pdfExtractor";
 import { PricingRequestDialog } from "./PricingRequestDialog";
-import { addBacklogEntry } from "@/lib/backlog";
+import { saveToBacklog } from "@/lib/backlog";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { getPDFs } from "@/lib/pdfStorage";
@@ -151,8 +151,8 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
         )
       );
 
-      // Save to backlog
-      addBacklogEntry(
+      // Save to backlog (local + database)
+      await saveToBacklog(
         userMessage.content,
         result.answer,
         pdfFileNames.join(', ') || undefined,
@@ -181,11 +181,12 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
       );
 
       // Save error to backlog as well
-      addBacklogEntry(
+      await saveToBacklog(
         userMessage.content,
         errorMessage,
         pdfFileNames.join(', ') || undefined,
-        false
+        false,
+        errorMessage
       );
 
       toast({

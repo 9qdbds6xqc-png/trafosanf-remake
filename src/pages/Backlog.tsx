@@ -8,10 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { isAuthenticated } from "@/lib/auth";
 import {
-  getBacklogEntries,
+  getBacklog,
+  getBacklogFromDatabase,
   clearBacklog,
   exportBacklog,
   formatTimestamp,
+  getCompanyId,
   type BacklogEntry,
 } from "@/lib/backlog";
 import { Download, Trash2, Search, FileText, Clock } from "lucide-react";
@@ -38,14 +40,37 @@ const Backlog = () => {
     }
   }, []);
   const [filterPDF, setFilterPDF] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const [showCompanyFilter, setShowCompanyFilter] = useState(false);
+  const [companyFilter, setCompanyFilter] = useState<string>("");
 
   useEffect(() => {
     loadEntries();
   }, []);
 
-  const loadEntries = () => {
-    const allEntries = getBacklogEntries();
-    setEntries(allEntries);
+  const loadEntries = async () => {
+    setLoading(true);
+    try {
+      // Try to load from database first
+      const companyId = companyFilter || getCompanyId();
+      const dbEntries = await getBacklogFromDatabase(companyId);
+      
+      if (dbEntries.length > 0) {
+        // If database has entries, use them
+        setEntries(dbEntries);
+      } else {
+        // Fallback to local storage
+        const localEntries = getBacklog();
+        setEntries(localEntries);
+      }
+    } catch (error) {
+      console.error('Error loading entries:', error);
+      // Fallback to local storage on error
+      const localEntries = getBacklog();
+      setEntries(localEntries);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleExport = () => {
@@ -103,9 +128,20 @@ const Backlog = () => {
               </h1>
               <p className="text-muted-foreground">
                 Alle gespeicherten Fragen und Antworten
+                {getCompanyId() && (
+                  <span className="ml-2 text-xs">(Company: {getCompanyId()})</span>
+                )}
               </p>
             </div>
             <div className="flex gap-2">
+              <Button 
+                onClick={loadEntries} 
+                variant="outline" 
+                size="sm"
+                disabled={loading}
+              >
+                {loading ? "Lade..." : "Aktualisieren"}
+              </Button>
               <Button onClick={handleExport} variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Exportieren
@@ -161,6 +197,34 @@ const Backlog = () => {
                 className="pl-10"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowCompanyFilter(!showCompanyFilter);
+                if (showCompanyFilter) {
+                  setCompanyFilter("");
+                  loadEntries();
+                }
+              }}
+            >
+              {showCompanyFilter ? "Alle anzeigen" : "Nach Company filtern"}
+            </Button>
+            {showCompanyFilter && (
+              <Input
+                placeholder="Company ID..."
+                value={companyFilter}
+                onChange={(e) => {
+                  setCompanyFilter(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    loadEntries();
+                  }
+                }}
+                className="max-w-xs"
+              />
+            )}
             <select
               value={filterPDF}
               onChange={(e) => setFilterPDF(e.target.value)}
@@ -178,7 +242,11 @@ const Backlog = () => {
 
           {/* Entries List */}
           <ScrollArea className="h-[600px] border border-border rounded-lg p-4">
-            {filteredEntries.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">
+                Lade Einträge...
+              </div>
+            ) : filteredEntries.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 {entries.length === 0
                   ? "Noch keine Einträge im Backlog"
@@ -206,6 +274,11 @@ const Backlog = () => {
                           <Badge variant="outline" className="text-xs">
                             <FileText className="h-3 w-3 mr-1" />
                             {entry.pdfFileName}
+                          </Badge>
+                        )}
+                        {entry.companyId && (
+                          <Badge variant="secondary" className="text-xs">
+                            Company: {entry.companyId}
                           </Badge>
                         )}
                       </div>

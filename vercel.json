@@ -2,6 +2,9 @@
   "functions": {
     "api/auth.ts": {
       "runtime": "@vercel/node"
+    },
+    "api/backlog.ts": {
+      "runtime": "@vercel/node"
     }
   },
   "headers": [
@@ -14,7 +17,7 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "POST, OPTIONS"
+          "value": "GET, POST, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",
