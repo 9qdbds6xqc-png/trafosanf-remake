@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, FileText, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractTextFromPDF } from "@/lib/pdfExtractor";
+import { savePDFs } from "@/lib/pdfStorage";
 
 interface PDFUploadProps {
   onPDFLoaded: (text: string, fileName: string) => void;
@@ -152,10 +153,13 @@ export const PDFUpload = ({ onPDFLoaded, currentPDFNames = [], className }: PDFU
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
+        savePDFs("", []);
         onPDFLoaded("", "");
       } else {
         const combinedText = updatedFiles.map(f => f.text).join('\n\n---\n\n');
         const combinedNames = updatedFiles.map(f => f.name).join(', ');
+        const namesArray = combinedNames ? combinedNames.split(',').map(n => n.trim()) : [];
+        savePDFs(combinedText, namesArray);
         onPDFLoaded(combinedText, combinedNames);
       }
     } else {
@@ -164,6 +168,7 @@ export const PDFUpload = ({ onPDFLoaded, currentPDFNames = [], className }: PDFU
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      savePDFs("", []);
       onPDFLoaded("", "");
     }
     setError(null);

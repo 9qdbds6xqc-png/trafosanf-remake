@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMessage } from "./ChatMessage";
-import { PDFUpload } from "./PDFUpload";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Upload } from "lucide-react";
 import { askQuestion, preparePDFContext } from "@/lib/openai";
 import { findRelevantSections } from "@/lib/pdfExtractor";
 import { PricingRequestDialog } from "./PricingRequestDialog";
 import { addBacklogEntry } from "@/lib/backlog";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { getPDFs } from "@/lib/pdfStorage";
 
 interface Message {
   id: string;
@@ -22,6 +23,7 @@ interface ChatInterfaceProps {
 }
 
 export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfaceProps) => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -37,6 +39,15 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
   const [pendingPricingQuestion, setPendingPricingQuestion] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load PDFs from storage on mount
+  useEffect(() => {
+    const pdfs = getPDFs();
+    if (pdfs && pdfs.text) {
+      setPdfContext(pdfs.text);
+      setPdfFileNames(pdfs.fileNames || []);
+    }
+  }, []);
 
   // Update welcome message when PDF is loaded
   useEffect(() => {
@@ -69,21 +80,6 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
     }
   }, [input]);
 
-  const handlePDFLoaded = (text: string, fileNames: string) => {
-    setPdfContext(text);
-    const names = fileNames ? fileNames.split(',').map(n => n.trim()) : [];
-    setPdfFileNames(names);
-    
-    if (!text || text.trim().length === 0) {
-      setMessages([
-        {
-          id: "1",
-          role: "assistant",
-          content: "Bitte laden Sie ein PDF-Dokument hoch, damit ich Ihre Fragen beantworten kann.",
-        },
-      ]);
-    }
-  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -217,13 +213,50 @@ export const ChatInterface = ({ pdfContext: initialPDFContext }: ChatInterfacePr
   return (
     <>
       <div className="flex flex-col h-full max-h-[600px] border border-border rounded-lg bg-background">
-        {/* PDF Upload Section */}
-        <div className="border-b border-border p-4">
-          <PDFUpload 
-            onPDFLoaded={handlePDFLoaded}
-            currentPDFNames={pdfFileNames}
-          />
-        </div>
+        {/* PDF Status Section */}
+        {pdfFileNames.length > 0 && (
+          <div className="border-b border-border p-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Aktive Dokumente:
+                </span>
+                <span className="text-sm font-medium">
+                  {pdfFileNames.length === 1 
+                    ? pdfFileNames[0]
+                    : `${pdfFileNames.length} Dokumente`
+                  }
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/upload')}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Dokumente ändern
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {pdfFileNames.length === 0 && (
+          <div className="border-b border-border p-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Keine Dokumente hochgeladen
+              </p>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate('/upload')}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                PDFs hochladen
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

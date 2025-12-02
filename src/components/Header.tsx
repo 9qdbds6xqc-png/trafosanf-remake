@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 const mainNav: Array<{ name: string; href: string; active?: boolean }> = [];
 
 const subNav = [
+  { name: "Upload", href: "/upload" },
   { name: "Backlog", href: "/backlog" },
 ];
 

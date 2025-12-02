@@ -17,7 +17,7 @@ const Questions = () => {
           </h1>
           <p className="text-muted-foreground text-center max-w-2xl">
             Intelligente Lösungen für Beschaffung. Stellen Sie Fragen zu unseren Produkten und Dienstleistungen. 
-            Laden Sie ein PDF-Dokument hoch, damit wir Ihnen präzise Antworten basierend auf unseren Unterlagen geben können.
+            Laden Sie PDF-Dokumente hoch, um präzise Antworten basierend auf Ihren Unterlagen zu erhalten.
           </p>
         </div>
 
